@@ -4,6 +4,8 @@ This project starts a transparent, public-data replication of:
 
 Kanamura, T. and Bunn, D. W. (2022). *Market making and electricity price formation in Japan*. Energy Economics, 107, 105765.
 
+[Read the notebook on GitHub](https://github.com/feimax2026/paper-replications/blob/main/replications/kanamura-bunn-2022-jepx/notebooks/01_descriptive_replication.ipynb) · [![Open in Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/feimax2026/paper-replications/blob/main/replications/kanamura-bunn-2022-jepx/notebooks/01_descriptive_replication.ipynb)
+
 ## Data
 
 - `data/raw/jepx_spot.csv`: JEPX day-ahead market data, including system price and buy/sell bid volumes.
