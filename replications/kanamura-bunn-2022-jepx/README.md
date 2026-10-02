@@ -35,9 +35,10 @@ python3 scripts/build_panel.py --period original
 python3 scripts/descriptive_analysis.py --period original
 python3 scripts/build_panel.py --period extension
 python3 scripts/descriptive_analysis.py --period extension
+python3 scripts/extension_findings.py
 ```
 
-Each stage produces fiscal-year statistics and two SVG figures under its own `report/<period>/` and `figures/<period>/` directories.
+Each stage produces fiscal-year statistics and two SVG figures under its own `report/<period>/` and `figures/<period>/` directories. The extension script additionally produces tail-risk, V-shape, correlation, and price-event diagnostics under `report/extension/`.
 
 ## Read and verify
 
