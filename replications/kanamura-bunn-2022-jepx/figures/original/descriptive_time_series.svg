@@ -1,8 +1,8 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="1400" height="940" viewBox="0 0 1400 940">
 <rect width="100%" height="100%" fill="#ffffff"/>
 <style>text { font-family: Arial, sans-serif; fill: #202124; } .axis { stroke: #9aa0a6; stroke-width: 1; } .grid { stroke: #e8eaed; stroke-width: 1; } .title { font-size: 22px; font-weight: 700; } .subtitle { font-size: 13px; fill: #5f6368; } .label { font-size: 12px; fill: #5f6368; } .panel-title { font-size: 15px; font-weight: 700; }</style>
-<text x="95" y="32" class="title">JEPX descriptive replication: FY2015–FY2019</text>
-<text x="95" y="52" class="subtitle">Daily means from the public-data panel. Dashed policy marker: gross bidding begins in FY2017.</text>
+<text x="95" y="32" class="title">JEPX descriptive analysis: Original-period calibration: FY2015–FY2019</text>
+<text x="95" y="52" class="subtitle">Daily means from the public-data panel. Dashed marker: gross bidding begins in FY2017.</text>
 <text x="95" y="95" class="panel-title">System price (JPY/kWh)</text>
 <line x1="95" y1="405.0" x2="650" y2="405.0" class="grid"/>
 <text x="87" y="409.0" text-anchor="end" class="label">3.1</text>

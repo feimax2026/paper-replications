@@ -10,6 +10,7 @@ explicitly as a proxy rather than presented as the paper's exact input series.
 
 from __future__ import annotations
 
+import argparse
 import csv
 from datetime import date
 from pathlib import Path
@@ -17,10 +18,18 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 RAW = ROOT / "data" / "raw"
-OUT = ROOT / "data" / "processed" / "kanamura_bunn_2022_panel.csv"
-
-START = date(2015, 4, 1)
-END = date(2020, 3, 8)
+PERIODS = {
+    "original": {
+        "start": date(2015, 4, 1),
+        "end": date(2020, 3, 8),
+        "output": "original_period_panel.csv",
+    },
+    "extension": {
+        "start": date(2020, 4, 1),
+        "end": date(2025, 3, 31),
+        "output": "extension_period_panel.csv",
+    },
+}
 
 
 def as_float(value: str) -> float | None:
@@ -38,8 +47,13 @@ def load_temperature_proxy() -> dict[str, float | None]:
 
 
 def main() -> None:
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--period", choices=PERIODS, default="original")
+    args = parser.parse_args()
+    period = PERIODS[args.period]
+    output = ROOT / "data" / "processed" / period["output"]
     temperatures = load_temperature_proxy()
-    OUT.parent.mkdir(parents=True, exist_ok=True)
+    output.parent.mkdir(parents=True, exist_ok=True)
     fields = [
         "datetime",
         "date",
@@ -54,14 +68,14 @@ def main() -> None:
     ]
 
     written = 0
-    with (RAW / "jepx_spot.csv").open(encoding="utf-8", newline="") as source, OUT.open(
+    with (RAW / "jepx_spot.csv").open(encoding="utf-8", newline="") as source, output.open(
         "w", encoding="utf-8", newline=""
     ) as target:
         writer = csv.DictWriter(target, fieldnames=fields)
         writer.writeheader()
         for row in csv.DictReader(source):
             delivery_date = date.fromisoformat(row["Date"])
-            if not START <= delivery_date <= END:
+            if not period["start"] <= delivery_date <= period["end"]:
                 continue
 
             buy = as_float(row["Buy Bid Volume kWh"])
@@ -81,7 +95,7 @@ def main() -> None:
                 }
             )
             written += 1
-    print(f"Wrote {written:,} half-hourly observations to {OUT.relative_to(ROOT)}")
+    print(f"Wrote {written:,} half-hourly observations to {output.relative_to(ROOT)}")
 
 
 if __name__ == "__main__":

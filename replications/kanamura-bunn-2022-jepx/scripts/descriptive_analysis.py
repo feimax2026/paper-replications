@@ -3,6 +3,7 @@
 
 from __future__ import annotations
 
+import argparse
 import csv
 import math
 from collections import defaultdict
@@ -11,9 +12,27 @@ from pathlib import Path
 
 
 ROOT = Path(__file__).resolve().parents[1]
-PANEL = ROOT / "data" / "processed" / "kanamura_bunn_2022_panel.csv"
-FIGURES = ROOT / "figures"
-REPORT = ROOT / "report"
+PERIODS = {
+    "original": {
+        "panel": "original_period_panel.csv",
+        "label": "Original-period calibration: FY2015–FY2019",
+        "comparison_years": ("FY2015", "FY2019"),
+        "policy_marker": date(2017, 4, 1),
+    },
+    "extension": {
+        "panel": "extension_period_panel.csv",
+        "label": "Time-extension analysis: FY2020–FY2024",
+        "comparison_years": ("FY2020", "FY2024"),
+        "policy_marker": None,
+    },
+}
+
+PANEL: Path
+FIGURES: Path
+REPORT: Path
+LABEL: str
+COMPARISON_YEARS: tuple[str, str]
+POLICY_MARKER: date | None
 
 WIDTH, HEIGHT = 1400, 940
 LEFT, RIGHT, TOP, BOTTOM = 95, 45, 65, 60
@@ -79,7 +98,7 @@ def line_panel(
         for day, value in zip(dates, values)
     )
     elements.append(f'<polyline fill="none" stroke="{color}" stroke-width="1.25" points="{points}"/>')
-    for year in range(2015, 2021):
+    for year in range(dates[0].year, dates[-1].year + 2):
         tick = date(year, 4, 1)
         if dates[0] <= tick <= dates[-1]:
             tick_x = scale(tick.toordinal(), start, end, x, x + width)
@@ -91,8 +110,11 @@ def build_time_series(daily: dict[date, dict[str, list[float]]]) -> None:
     dates = sorted(daily)
     average = {metric: [mean(daily[day][metric]) for day in dates] for metric in daily[dates[0]]}
     FIGURES.mkdir(exist_ok=True)
-    elements = svg_start("JEPX descriptive replication: FY2015–FY2019")
-    elements.append('<text x="95" y="52" class="subtitle">Daily means from the public-data panel. Dashed policy marker: gross bidding begins in FY2017.</text>')
+    elements = svg_start(f"JEPX descriptive analysis: {LABEL}")
+    subtitle = "Daily means from the public-data panel."
+    if POLICY_MARKER:
+        subtitle += " Dashed marker: gross bidding begins in FY2017."
+    elements.append(f'<text x="95" y="52" class="subtitle">{subtitle}</text>')
     positions = [(95, 105), (760, 105), (95, 515), (760, 515)]
     panels = [
         ("System price (JPY/kWh)", "price", "#d93025"),
@@ -102,21 +124,21 @@ def build_time_series(daily: dict[date, dict[str, list[float]]]) -> None:
     ]
     for (title, metric, color), (x, y) in zip(panels, positions):
         line_panel(elements, x, y, 555, 300, title, dates, average[metric], color)
-        marker = date(2017, 4, 1)
-        marker_x = scale(marker.toordinal(), dates[0].toordinal(), dates[-1].toordinal(), x, x + 555)
-        elements.append(f'<line x1="{marker_x:.1f}" y1="{y}" x2="{marker_x:.1f}" y2="{y + 300}" stroke="#5f6368" stroke-width="1" stroke-dasharray="5,4"/>')
-    write_svg(FIGURES / "figure_01_descriptive_time_series.svg", elements)
+        if POLICY_MARKER and dates[0] <= POLICY_MARKER <= dates[-1]:
+            marker_x = scale(POLICY_MARKER.toordinal(), dates[0].toordinal(), dates[-1].toordinal(), x, x + 555)
+            elements.append(f'<line x1="{marker_x:.1f}" y1="{y}" x2="{marker_x:.1f}" y2="{y + 300}" stroke="#5f6368" stroke-width="1" stroke-dasharray="5,4"/>')
+    write_svg(FIGURES / "descriptive_time_series.svg", elements)
 
 
 def build_scatter(rows: list[dict[str, float | str]]) -> None:
-    selected = [row for row in rows if row["fiscal_year"] in ("FY2015", "FY2019")]
+    selected = [row for row in rows if row["fiscal_year"] in COMPARISON_YEARS]
     x_values = [float(row["temperature"]) for row in selected]
     y_values = [float(row["scarcity"]) / 1_000_000 for row in selected]
     x_low, x_high = math.floor(min(x_values)) - 1, math.ceil(max(x_values)) + 1
     y_low, y_high = math.floor(min(y_values)) - 1, math.ceil(max(y_values)) + 1
-    elements = svg_start("Temperature and JEPX market tightness", width=1400, height=650)
+    elements = svg_start(f"Temperature and JEPX market tightness: {LABEL}", width=1400, height=650)
     elements.append('<text x="95" y="52" class="subtitle">Each dot is a half-hour observation. Tightness = buy bid volume minus sell bid volume.</text>')
-    panels = [("FY2015", 95, "#1a73e8"), ("FY2019", 760, "#d93025")]
+    panels = [(COMPARISON_YEARS[0], 95, "#1a73e8"), (COMPARISON_YEARS[1], 760, "#d93025")]
     for fiscal_year, x, color in panels:
         y, width, height = 105, 555, 430
         elements.append(f'<text x="{x}" y="90" class="panel-title">{fiscal_year}</text>')
@@ -137,10 +159,23 @@ def build_scatter(rows: list[dict[str, float | str]]) -> None:
             elements.append(f'<circle cx="{px:.1f}" cy="{py:.1f}" r="1.2" fill="{color}" fill-opacity="0.18"/>')
         elements.append(f'<text x="{x + width / 2}" y="{y + height + 45}" text-anchor="middle" class="label">Tokyo temperature proxy (C)</text>')
     elements.append('<text x="45" y="330" transform="rotate(-90 45 330)" text-anchor="middle" class="label">Buy minus sell bid volume (million kWh)</text>')
-    write_svg(FIGURES / "figure_02_temperature_scarcity.svg", elements)
+    write_svg(FIGURES / "temperature_scarcity.svg", elements)
 
 
 def main() -> None:
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--period", choices=PERIODS, default="original")
+    args = parser.parse_args()
+    period = PERIODS[args.period]
+
+    global PANEL, FIGURES, REPORT, LABEL, COMPARISON_YEARS, POLICY_MARKER
+    PANEL = ROOT / "data" / "processed" / period["panel"]
+    FIGURES = ROOT / "figures" / args.period
+    REPORT = ROOT / "report" / args.period
+    LABEL = str(period["label"])
+    COMPARISON_YEARS = tuple(period["comparison_years"])
+    POLICY_MARKER = period["policy_marker"]
+
     rows: list[dict[str, float | str]] = []
     daily: dict[date, dict[str, list[float]]] = defaultdict(lambda: defaultdict(list))
     with PANEL.open(encoding="utf-8", newline="") as handle:
@@ -178,35 +213,35 @@ def main() -> None:
                 f"{mean([float(row['temperature']) for row in group]):.3f}",
             ])
     by_year = {year: [row for row in rows if row["fiscal_year"] == year] for year in sorted({str(row["fiscal_year"]) for row in rows})}
-    first, last = by_year["FY2015"], by_year["FY2019"]
+    first, last = by_year[COMPARISON_YEARS[0]], by_year[COMPARISON_YEARS[1]]
     first_tightness = mean([float(row["scarcity"]) for row in first]) / 1_000_000
     last_tightness = mean([float(row["scarcity"]) for row in last]) / 1_000_000
     first_buy = mean([float(row["buy"]) for row in first]) / 1_000_000
     last_buy = mean([float(row["buy"]) for row in last]) / 1_000_000
     first_sell = mean([float(row["sell"]) for row in first]) / 1_000_000
     last_sell = mean([float(row["sell"]) for row in last]) / 1_000_000
-    (REPORT / "first_stage_results.md").write_text(
-        "# First-stage descriptive results\n\n"
+    (REPORT / "descriptive_results.md").write_text(
+        f"# Descriptive results: {LABEL}\n\n"
         "This is a descriptive checkpoint, not yet an estimate of the paper's state-switching model.\n\n"
         "## What the public-data panel shows\n\n"
-        f"- Mean buy bid volume increased from {first_buy:.3f} million kWh in FY2015 to {last_buy:.3f} million kWh in FY2019.\n"
+        f"- Mean buy bid volume changed from {first_buy:.3f} million kWh in {COMPARISON_YEARS[0]} to {last_buy:.3f} million kWh in {COMPARISON_YEARS[1]}.\n"
         f"- Mean sell bid volume increased from {first_sell:.3f} million kWh to {last_sell:.3f} million kWh over the same period.\n"
         f"- Mean buy-minus-sell tightness moved from {first_tightness:.3f} million kWh to {last_tightness:.3f} million kWh.\n"
-        "- Mean prices do not move monotonically across fiscal years. That is consistent with the paper's motivation for a nonlinear, regime-dependent model rather than a before/after mean comparison.\n\n"
+        "- Mean prices do not move monotonically across fiscal years. That motivates a nonlinear, regime-dependent model rather than a before/after mean comparison.\n\n"
         "## Interpretation boundary\n\n"
-        "These figures provide a qualitative check of the paper's descriptive premise: market activity rose after the 2017 gross-bidding intervention and buy and sell volumes became more balanced. They do not establish causality or reproduce the paper's parameter estimates. The temperature column is a public daily max/min midpoint proxy, so it must be replaced or stress-tested before making an exact model-level claim.\n\n"
+        "These figures describe market evolution; they do not establish causality or reproduce the paper's parameter estimates. The temperature column is a public daily max/min midpoint proxy, so it must be replaced or stress-tested before making an exact model-level claim.\n\n"
         "## Generated artifacts\n\n"
         "- `descriptive_statistics.csv`\n"
-        "- `../figures/figure_01_descriptive_time_series.svg`\n"
-        "- `../figures/figure_02_temperature_scarcity.svg`\n",
+        "- `../../figures/<period>/descriptive_time_series.svg`\n"
+        "- `../../figures/<period>/temperature_scarcity.svg`\n",
         encoding="utf-8",
     )
     build_time_series(daily)
     build_scatter(rows)
     print(f"Wrote {summary_path.relative_to(ROOT)}")
-    print("Wrote report/first_stage_results.md")
-    print("Wrote figures/figure_01_descriptive_time_series.svg")
-    print("Wrote figures/figure_02_temperature_scarcity.svg")
+    print(f"Wrote {(REPORT / 'descriptive_results.md').relative_to(ROOT)}")
+    print(f"Wrote {(FIGURES / 'descriptive_time_series.svg').relative_to(ROOT)}")
+    print(f"Wrote {(FIGURES / 'temperature_scarcity.svg').relative_to(ROOT)}")
 
 
 if __name__ == "__main__":

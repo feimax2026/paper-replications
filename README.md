@@ -8,7 +8,7 @@ and a concise statement of what was and was not reproduced.
 
 | Project | Paper | Status |
 | --- | --- | --- |
-| [Kanamura and Bunn (2022): JEPX market making](replications/kanamura-bunn-2022-jepx/) | *Market making and electricity price formation in Japan* | Descriptive replication complete |
+| [Kanamura and Bunn (2022): JEPX market making](replications/kanamura-bunn-2022-jepx/) | *Market making and electricity price formation in Japan* | Original-period calibration and FY2020–FY2024 extension complete |
 
 ## Project convention
 

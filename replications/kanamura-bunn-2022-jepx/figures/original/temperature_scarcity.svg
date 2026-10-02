@@ -1,7 +1,7 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="1400" height="650" viewBox="0 0 1400 650">
 <rect width="100%" height="100%" fill="#ffffff"/>
 <style>text { font-family: Arial, sans-serif; fill: #202124; } .axis { stroke: #9aa0a6; stroke-width: 1; } .grid { stroke: #e8eaed; stroke-width: 1; } .title { font-size: 22px; font-weight: 700; } .subtitle { font-size: 13px; fill: #5f6368; } .label { font-size: 12px; fill: #5f6368; } .panel-title { font-size: 15px; font-weight: 700; }</style>
-<text x="95" y="32" class="title">Temperature and JEPX market tightness</text>
+<text x="95" y="32" class="title">Temperature and JEPX market tightness: Original-period calibration: FY2015–FY2019</text>
 <text x="95" y="52" class="subtitle">Each dot is a half-hour observation. Tightness = buy bid volume minus sell bid volume.</text>
 <text x="95" y="90" class="panel-title">FY2015</text>
 <line x1="95.0" y1="105" x2="95.0" y2="535" class="grid"/>
