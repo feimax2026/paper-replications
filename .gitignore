@@ -1,0 +1,6 @@
+# Large, reproducibly downloadable source files
+data/raw/*.csv
+
+# Python cache
+__pycache__/
+scripts/__pycache__/
